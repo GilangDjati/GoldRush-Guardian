@@ -159,10 +159,9 @@ export default function GuardianDashboard() {
             className="w-full max-w-3xl relative group mb-20"
           >
             {/* Glow backing effect */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-accent/60 to-cyan-500/60 rounded-2xl blur-lg opacity-10 group-focus-within:opacity-40 transition duration-[600ms] pointer-events-none"></div>
+            <div className="absolute -inset-1 z-0 bg-gradient-to-r from-emerald-accent/60 to-cyan-500/60 rounded-2xl blur-lg opacity-10 group-focus-within:opacity-40 transition duration-[600ms] pointer-events-none"></div>
             
-            <div className="relative z-10 flex flex-col sm:flex-row items-center bg-zinc-950/80 border border-zinc-800 rounded-2xl p-2.5 shadow-2xl backdrop-blur-md">
-              <div className="pl-5 text-zinc-600 hidden sm:block">
+            <div className="relative z-50 flex flex-col sm:flex-row items-center bg-zinc-950/80 border border-zinc-800 rounded-2xl p-2.5 shadow-2xl backdrop-blur-md">              <div className="pl-5 text-zinc-600 hidden sm:block">
                 <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
@@ -172,7 +171,7 @@ export default function GuardianDashboard() {
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="Target Identity (e.g. 9xQE...)"
-                className="w-full bg-transparent text-foreground px-5 py-4 focus:outline-none placeholder:text-zinc-600 font-mono text-lg"
+                className="w-full bg-transparent text-foreground px-5 py-4 focus:outline-none placeholder:text-zinc-400 font-mono text-lg"
                 disabled={isScanning}
               />
               <button 
