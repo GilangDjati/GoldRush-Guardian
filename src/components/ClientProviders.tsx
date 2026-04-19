@@ -1,19 +1,31 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { GoldRushWrapper } from "@/components/GoldRushWrapper";
+import { GoldRushProvider } from "@covalenthq/goldrush-kit";
 
 export function ClientProviders({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
+  
+  useEffect(() => { 
+    setMounted(true); 
   }, []);
-
+  
+  // 1. Defend Against Hydration Mismatch safely without blank frames
   if (!mounted) {
-    // Return children to ensure safe hydration layout, or just a simple div.
-    return <div className="min-h-full flex flex-col">{children}</div>;
+    return <>{children}</>;
   }
 
-  return <GoldRushWrapper>{children}</GoldRushWrapper>;
+  const apiKey = process.env.NEXT_PUBLIC_GOLD_RUSH_API_KEY;
+  
+  // 2. Strong Key Format Validation (Covalent requires cqt_ format)
+  if (!apiKey || !apiKey.startsWith('cqt_')) {
+    console.error("ENVIRONMENT WARNING: Missing or incorrectly formatted Covalent API Key. Must start with 'cqt_'.");
+    return <>{children}</>;
+  }
+
+  return (
+    <GoldRushProvider apikey={apiKey}>
+      {children}
+    </GoldRushProvider>
+  );
 }

@@ -52,7 +52,16 @@ export async function getSolanaTrustData(address: string) {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch Solana balances: ${response.status} ${response.statusText}`);
+    if (response.status === 401) {
+      throw new Error("Invalid API Key. Please verify your environment configuration.");
+    }
+    if (response.status === 404) {
+      throw new Error("Address not found on the Solana physical ledger or it has no history.");
+    }
+    if (response.status === 429) {
+      throw new Error("Rate limit exceeded. Please wait a moment and try again.");
+    }
+    throw new Error(`Data sync failed (Status: ${response.status})`);
   }
 
   const json = await response.json();
