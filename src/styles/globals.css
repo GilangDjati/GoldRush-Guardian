@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+:root {
+  --background: #09090b; /* zinc-950 */
+  --foreground: #fafafa;
+  /* Emerald Green Accents */
+  --emerald-accent: #10b981; 
+  --emerald-accent-hover: #059669;
+  /* Crimson Accents */
+  --crimson-accent: #e11d48;
+  --crimson-accent-hover: #be123c;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-emerald-accent: var(--emerald-accent);
+  --color-emerald-accent-hover: var(--emerald-accent-hover);
+  --color-crimson-accent: var(--crimson-accent);
+  --color-crimson-accent-hover: var(--crimson-accent-hover);
+  --font-sans: var(--font-inter);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+}
