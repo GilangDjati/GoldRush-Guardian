@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "../styles/globals.css";
-// Pastikan ini tetap menggunakan kurung kurawal
 import { ClientProviders } from "@/components/ClientProviders";
+
 export const metadata: Metadata = {
   title: "Guardian | On-Chain Trust Protocol",
   description: "High-end on-chain trust scoring dashboard for Solana.",
@@ -13,13 +13,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className="dark h-full antialiased"
-      style={{ colorScheme: 'dark' }} // Memastikan browser merender scrollbar dark mode
-    >
+    // Gunakan class 'dark' secara manual tanpa variabel font
+    <html lang="en" className="dark h-full antialiased">
       <head>
-        {/* Bypass Node.js ESM Loader dengan memuat CSS via CDN */}
         <link
           rel="stylesheet"
           href="https://unpkg.com/@covalenthq/goldrush-kit@latest/dist/styles.css"

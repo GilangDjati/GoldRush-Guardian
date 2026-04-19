@@ -1,35 +1,26 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: #000000;
   --foreground: #ffffff;
-  
-  /* Emerald Green Accents (Safe) */
-  --emerald-accent: #10b981; 
-  --emerald-accent-hover: #059669;
-  
-  /* Crimson Red Accents (Risky) */
-  --crimson-accent: #e11d48;
-  --crimson-accent-hover: #be123c;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-emerald-accent: var(--emerald-accent);
-  --color-emerald-accent-hover: var(--emerald-accent-hover);
-  --color-crimson-accent: var(--crimson-accent);
-  --color-crimson-accent-hover: var(--crimson-accent-hover);
-}
-
-html {
-  scroll-behavior: smooth;
 }
 
 body {
+  /* Font sistem modern yang sangat mirip dengan Inter/Geist */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background-color: var(--background);
   color: var(--foreground);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  margin: 0;
-  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tambahkan aksen warna untuk Trust Score nanti */
+.text-emerald {
+  color: #10b981;
+}
+
+.text-crimson {
+  color: #dc2626;
 }
