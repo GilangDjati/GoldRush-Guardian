@@ -3,4 +3,4 @@ const nextConfig = {
   transpilePackages: ['@covalenthq/goldrush-kit'],
 };
 
-export default nextConfig;
+module.exports = nextConfig;
