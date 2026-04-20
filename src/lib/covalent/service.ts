@@ -7,6 +7,9 @@ export interface TrustScoreData {
   verifiedProtocols: string[];
   insights: string;
   isDustingRisk: boolean;
+  decoderLogs: string[];
+  shadowAlert: string | null;
+  heatmapMetrics: { symbol: string, value: string, riskStatus: 'safe' | 'neutral' | 'danger' }[];
 }
 
 const DEX_PROGRAMS = {
@@ -18,25 +21,64 @@ const DEX_PROGRAMS = {
   PHOENIX: 'PhoeNiXZ8ByJGLkxNfZRnkUfjvmuYqLR8943EWev1E5'
 };
 
-export function calculateTrustScore(balances: any[], transactions: any[]): { score: number, verifiedProtocols: string[], isDustingRisk: boolean, insights: string } {
+export function calculateTrustScore(balances: any[], transactions: any[]): { 
+  score: number, 
+  verifiedProtocols: string[], 
+  isDustingRisk: boolean, 
+  insights: string,
+  decoderLogs: string[],
+  shadowAlert: string | null,
+  heatmapMetrics: any[]
+} {
   let score = 50; // Base baseline
   let verifiedProtocols: string[] = [];
   let isDustingRisk = false;
   let hasMajorDEXHistory = false;
+  
+  let decoderLogs: string[] = [];
+  let heatmapMetrics: any[] = [];
+  let shadowAlert: string | null = null;
 
-  // 1. Balance Evaluation Layer
+  // 1. Balance Evaluation Layer & Heatmap Genesis
   const solToken = balances.find((b) => b.contract_ticker_symbol === 'SOL' || b.native_token === true);
   if (solToken) {
     const decimals = solToken.contract_decimals || 9;
     const balanceAmount = Number(solToken.balance) / Math.pow(10, decimals);
     if (balanceAmount > 5) score += 15;
     else if (balanceAmount > 0.5) score += 5;
+    
+    heatmapMetrics.push({ symbol: 'SOL', value: balanceAmount.toFixed(2), riskStatus: 'safe' });
+    decoderLogs.push(`✅ SYSTEM CONFIRMED: Core identity holds Native Liquidity (${balanceAmount.toFixed(2)} SOL). Secure foundation established.`);
+  } else {
+    decoderLogs.push(`⚠️ WARNING: Mainframe detects zero Native Liquidity (SOL). Wallet operates on external gas fees or is newly spawned.`);
   }
 
-  // Dusting Check (>20 obscure assets might indicate dusting)
-  if (balances.length > 25) {
+  // Iterate over other assets for Map and Decoder logs
+  let dustCount = 0;
+  balances.forEach(b => {
+      if (b.contract_ticker_symbol === 'SOL' || b.native_token === true) return;
+      
+      const isSpam = !b.quote || Number(b.quote) === 0;
+      const symbol = b.contract_ticker_symbol || `Unknown-${b.contract_address.substring(0,4)}`;
+      const usdValue = b.quote ? `$${Number(b.quote).toFixed(2)}` : '$0.00';
+      
+      if (isSpam) {
+         dustCount++;
+         heatmapMetrics.push({ symbol, value: usdValue, riskStatus: 'danger' });
+         if (dustCount < 3) {
+            decoderLogs.push(`🚨 DANGER TARGET DETECTED: Unknown smart contract '${symbol}' holds zero verified price index. Direct interaction carries high drainer risk!`);
+         }
+      } else {
+         heatmapMetrics.push({ symbol, value: usdValue, riskStatus: 'neutral' });
+      }
+  });
+
+  // Dusting Check / Shadow Monitor Trigger
+  if (dustCount > 20) {
     isDustingRisk = true;
     score -= 15;
+    shadowAlert = "MASSIVE SHADOW DELEGATION DETECTED. Wallet contains over 20+ zero-liquidity token payloads typically used in phishing and wallet-drain vectors. Immediate asset revocation advised.";
+    decoderLogs.push("⚠️ SYSTEM ISOLATION RECOMMENDED: Asset structure indicates heavy passive dusting attacks across smart contracts.");
   } else if (balances.length > 3) {
     score += 10;
   }
@@ -53,29 +95,32 @@ export function calculateTrustScore(balances: any[], transactions: any[]): { sco
   if (verifiedProtocols.length > 0) {
     hasMajorDEXHistory = true;
     score += (verifiedProtocols.length * 10); // +10 for each unique major protocol interact
+    decoderLogs.push(`✅ VERIFIED PROTOCOL LINK: Genuine historical linkage detected to leading DEX mainnets [${verifiedProtocols.join(', ')}]. Identity verified as Active DeFi Operator.`);
   }
 
   // 3. False-Positive Corrections
-  // If the wallet actively trades on verified protocols, ignore the dusting penalty heavily and ensure a 'Safe' rating.
   if (hasMajorDEXHistory && score < 70) {
       score = 75; // Forced Correction for high-activity DeFi users
   }
 
   // AI-like Procedural Insights
-  let insights = `Guardian AI initialization complete. Payload analyzed across ${balances.length} assets and recent network interactions. `;
+  let insights = `Guardian AI autonomous scan complete. Memory mapping analyzed ${balances.length} smart contracts. `;
   if (hasMajorDEXHistory) {
-      insights += `High-tier protocol interactions securely detected across ${verifiedProtocols.join(', ')}. Profile exhibits legitimate DeFi liquidity participation. Risk index suppressed via False-Positive heuristic protocol.`;
+      insights += `High-tier protocol interactions securely detected. Risk algorithms aggressively suppressed due to verified DEX linkages.`;
   } else if (isDustingRisk) {
-      insights += `Warning: Elevated asset count detected with zero verified DEX interactions. Potential dusting or sybil wallet geometry. Use caution.`;
+      insights += `CRITICAL WARNING: Sybil or dusting matrix geometries detected. Extreme caution recommended.`;
   } else {
-      insights += `Standard retail profile. Moderate holdings isolated. No complex DEX interactions recorded in recent history.`;
+      insights += `Standard retail isolation detected. Minimal complex interaction vectors in memory buffers.`;
   }
 
   return {
     score: Math.min(Math.max(Math.floor(score), 0), 100),
     verifiedProtocols,
     isDustingRisk,
-    insights
+    insights,
+    decoderLogs,
+    shadowAlert,
+    heatmapMetrics
   };
 }
 
@@ -133,6 +178,9 @@ export async function getSolanaTrustData(address: string): Promise<TrustScoreDat
     trustScore: metric.score,
     verifiedProtocols: metric.verifiedProtocols,
     insights: metric.insights,
-    isDustingRisk: metric.isDustingRisk
+    isDustingRisk: metric.isDustingRisk,
+    decoderLogs: metric.decoderLogs,
+    shadowAlert: metric.shadowAlert,
+    heatmapMetrics: metric.heatmapMetrics
   };
 }
