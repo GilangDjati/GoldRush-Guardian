@@ -103,13 +103,23 @@ export async function getSolanaTrustData(address: string): Promise<TrustScoreDat
   // Gracefully handle 501/Unsupported transaction fetching without crashing
   const resTxs = await fetch(txUrl, { headers }).catch(() => null);
 
-  const jsonBalances = await resBalances.json();
-  const balances = jsonBalances.data?.items || [];
+  let jsonBalances, jsonTxs;
+  try {
+    jsonBalances = await resBalances.json();
+  } catch (e) {
+    throw new Error("Invalid format received from balance lookup.");
+  }
+
+  const balances = jsonBalances?.data?.items || [];
   
   let transactions = [];
   if (resTxs && resTxs.ok) {
-    const jsonTxs = await resTxs.json();
-    transactions = jsonTxs.data?.items || [];
+    try {
+      jsonTxs = await resTxs.json();
+      transactions = jsonTxs?.data?.items || [];
+    } catch (e) {
+      console.warn("Soft failure decoding transaction body.", e);
+    }
   } else {
     console.warn("Transactions endpoint unsupported or rate-limited. Falling back to balance-only heuristics.");
   }
