@@ -1,17 +1,26 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: #000000;
+  --color-background: #121212;
   --color-foreground: #ffffff;
-  --color-emerald-accent: #10b981;
-  --color-emerald-accent-hover: #059669;
+  --color-gold-accent: #D4AF37;
+  --color-gold-accent-hover: #b8962e;
   --color-crimson-accent: #e11d48;
-  --color-crimson-accent-hover: #be123c;
+  --color-emerald-accent: #10b981;
 }
 
 :root {
-  --background: #000000;
+  --background: #121212;
   --foreground: #ffffff;
+  
+  /* Covalent GoldRush Kit Overrides for Luxury Theme */
+  --grk-background-primary: #121212;
+  --grk-background-secondary: #000000;
+  --grk-primary-solid: #D4AF37;
+  --grk-text-primary: #ffffff;
+  --grk-text-secondary: #a1a1aa;
+  --grk-border-color: rgba(212, 175, 55, 0.15);
+  --grk-border-radius: 12px;
 }
 
 html {
@@ -26,4 +35,10 @@ body {
   padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Force GoldRush Kit global theme borders to Scenteon Luxury format */
+:global(.grk-card), :global(.grk-component) {
+  border-color: var(--grk-border-color) !important;
+  background-color: var(--grk-background-secondary) !important;
 }
