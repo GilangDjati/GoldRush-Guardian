@@ -16,10 +16,6 @@ export default function RootLayout({
     // Gunakan class 'dark' secara manual tanpa variabel font
     <html lang="en" className="dark h-full antialiased">
       <head>
-        <link
-          rel="stylesheet"
-          href="https://unpkg.com/@covalenthq/goldrush-kit@latest/dist/styles.css"
-        />
       </head>
       <body className="min-h-full flex flex-col bg-black text-white">
         <ClientProviders>
