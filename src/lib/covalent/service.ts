@@ -1,4 +1,14 @@
 // Advanced Trust Verification Logic
+export interface TrustScoreData {
+  success: boolean;
+  address: string;
+  balances: any[];
+  trustScore: number;
+  verifiedProtocols: string[];
+  insights: string;
+  isDustingRisk: boolean;
+}
+
 const DEX_PROGRAMS = {
   JUPITER: 'JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4',
   RAYDIUM_V4: '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8',
@@ -31,21 +41,18 @@ export function calculateTrustScore(balances: any[], transactions: any[]): { sco
     score += 10;
   }
 
-  // 2. Transaction Heuristic Layer (Classified Verification)
-  if (transactions && transactions.length > 0) {
-    // We analyze the recent 50 transactions for protocol signatures
-    const txStringPayload = JSON.stringify(transactions);
+  // 2. Transaction & Balance Heuristic Layer (Classified Verification)
+  const combinedPayload = JSON.stringify(transactions || []) + JSON.stringify(balances || []);
 
-    if (txStringPayload.includes(DEX_PROGRAMS.JUPITER)) verifiedProtocols.push('Jupiter Aggregator');
-    if (txStringPayload.includes(DEX_PROGRAMS.RAYDIUM_V4) || txStringPayload.includes(DEX_PROGRAMS.RAYDIUM_CLMM)) verifiedProtocols.push('Raydium AMM');
-    if (txStringPayload.includes(DEX_PROGRAMS.ORCA)) verifiedProtocols.push('Orca Whirlpools');
-    if (txStringPayload.includes(DEX_PROGRAMS.METEORA)) verifiedProtocols.push('Meteora DLMM');
-    if (txStringPayload.includes(DEX_PROGRAMS.PHOENIX)) verifiedProtocols.push('Phoenix Orderbook');
+  if (combinedPayload.includes(DEX_PROGRAMS.JUPITER) || combinedPayload.includes('JUP')) verifiedProtocols.push('Jupiter Aggregator');
+  if (combinedPayload.includes(DEX_PROGRAMS.RAYDIUM_V4) || combinedPayload.includes(DEX_PROGRAMS.RAYDIUM_CLMM) || combinedPayload.includes('RAY')) verifiedProtocols.push('Raydium AMM');
+  if (combinedPayload.includes(DEX_PROGRAMS.ORCA) || combinedPayload.includes('ORCA')) verifiedProtocols.push('Orca Whirlpools');
+  if (combinedPayload.includes(DEX_PROGRAMS.METEORA) || combinedPayload.includes('MET')) verifiedProtocols.push('Meteora DLMM');
+  if (combinedPayload.includes(DEX_PROGRAMS.PHOENIX) || combinedPayload.includes('PHOENIX')) verifiedProtocols.push('Phoenix Orderbook');
 
-    if (verifiedProtocols.length > 0) {
-      hasMajorDEXHistory = true;
-      score += (verifiedProtocols.length * 10); // +10 for each unique major protocol interact
-    }
+  if (verifiedProtocols.length > 0) {
+    hasMajorDEXHistory = true;
+    score += (verifiedProtocols.length * 10); // +10 for each unique major protocol interact
   }
 
   // 3. False-Positive Corrections
@@ -72,35 +79,40 @@ export function calculateTrustScore(balances: any[], transactions: any[]): { sco
   };
 }
 
-export async function getSolanaTrustData(address: string) {
+export async function getSolanaTrustData(address: string): Promise<TrustScoreData> {
   const apiKey = process.env.NEXT_PUBLIC_GOLD_RUSH_API_KEY;
   if (!apiKey) console.warn("Missing Covalent API Key.");
 
   const authHeader = 'Basic ' + Buffer.from(`${apiKey}:`).toString('base64');
   const headers = { Authorization: authHeader };
 
-  // Parallel Fetch: Balances _and_ Transactions
+  // Parallel Fetch: Balances _and_ Transactions safely
   const balanceUrl = `https://api.covalenthq.com/v1/solana-mainnet/address/${address}/balances_v2/`;
   const txUrl = `https://api.covalenthq.com/v1/solana-mainnet/address/${address}/transactions_v3/?page-size=50`;
 
-  const [resBalances, resTxs] = await Promise.all([
-    fetch(balanceUrl, { headers }),
-    fetch(txUrl, { headers })
-  ]);
-
-  if (!resBalances.ok || !resTxs.ok) {
-     const status = !resBalances.ok ? resBalances.status : resTxs.status;
+  const resBalances = await fetch(balanceUrl, { headers });
+  
+  if (!resBalances.ok) {
+     const status = resBalances.status;
      if (status === 401) throw new Error("Invalid Auth / Connection Error. Please verify your cqt_ API key configuration.");
      if (status === 404) throw new Error("Classified ledger isolation: Target Identity holds no structural history on Solana.");
      if (status === 429) throw new Error("Covalent Rate limit exceeded. Standby.");
      throw new Error(`Data sync failed (Status: ${status})`);
   }
 
-  const jsonBalances = await resBalances.json();
-  const jsonTxs = await resTxs.json();
+  // Gracefully handle 501/Unsupported transaction fetching without crashing
+  const resTxs = await fetch(txUrl, { headers }).catch(() => null);
 
+  const jsonBalances = await resBalances.json();
   const balances = jsonBalances.data?.items || [];
-  const transactions = jsonTxs.data?.items || [];
+  
+  let transactions = [];
+  if (resTxs && resTxs.ok) {
+    const jsonTxs = await resTxs.json();
+    transactions = jsonTxs.data?.items || [];
+  } else {
+    console.warn("Transactions endpoint unsupported or rate-limited. Falling back to balance-only heuristics.");
+  }
   
   const metric = calculateTrustScore(balances, transactions);
 
@@ -111,5 +123,6 @@ export async function getSolanaTrustData(address: string) {
     trustScore: metric.score,
     verifiedProtocols: metric.verifiedProtocols,
     insights: metric.insights,
+    isDustingRisk: metric.isDustingRisk
   };
 }

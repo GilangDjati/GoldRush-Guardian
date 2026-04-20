@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { getSolanaTrustData } from '@/lib/covalent/service';
+import { getSolanaTrustData, TrustScoreData } from '@/lib/covalent/service';
 import { TransactionList } from '@covalenthq/goldrush-kit';
 
 // 1. Reliability Framework: Error Boundary wrapper
@@ -82,7 +82,7 @@ export default function GuardianDashboard() {
   const [address, setAddress] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<{ trustScore: number; balances: any[]; verifiedProtocols: string[]; insights: string } | null>(null);
+  const [data, setData] = useState<TrustScoreData | null>(null);
 
   const handleScan = async (e: React.FormEvent) => {
     e.preventDefault();
