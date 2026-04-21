@@ -36,7 +36,8 @@ export function calculateTrustScore(balances: any[], transactions: any[]): {
   insights: string,
   decoderLogs: string[],
   shadowAlert: string | null,
-  heatmapMetrics: any[]
+  heatmapMetrics: any[],
+  processedBalances: any[]
 } {
   let score = 50; // Base baseline
   let verifiedProtocols: string[] = [];
