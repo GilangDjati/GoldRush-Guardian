@@ -128,20 +128,18 @@ const PortfolioMatrix = ({ balances }: { balances: any[] }) => {
           </thead>
           <tbody>
             {balances.map((b, i) => {
+              // Rows are already pre-sorted perfectly by service.ts algorithm
+              const { guardianRiskClass, formattedValue: value, contract_address: address } = b;
               const symbol = b.guardianSymbol || `Unknown-${b.contract_address.substring(0,4)}`;
-              // Utilize the strict Boolean classifications calculated by the Guardian Engine in service.ts
-              const { isNative, isMetadataVerified, isImposter, isOfficialMint, formattedValue: value } = b;
               
-              let classification = <span className="text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded text-xs">Verified</span>;
+              let classification = <span className="text-zinc-400 bg-zinc-800/50 px-2 py-1 rounded text-xs border border-zinc-700/50">Neutral / Syncing</span>;
               
-              if (isImposter) {
+              if (guardianRiskClass === 'imposter') {
                   classification = <span className="text-crimson-accent bg-crimson-accent/10 px-2 py-1 rounded text-xs font-bold text-nowrap">Imposter / Scam</span>;
-              } else if (isOfficialMint) {
-                  classification = <span className="text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded text-xs">Official Verified</span>;
-              } else if (!isMetadataVerified) {
+              } else if (guardianRiskClass === 'safe') {
+                  classification = <span className="text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded text-xs font-bold">Official Verified</span>;
+              } else if (guardianRiskClass === 'danger') {
                   classification = <span className="text-crimson-accent bg-crimson-accent/10 px-2 py-1 rounded text-xs font-bold text-nowrap">High Risk</span>;
-              } else if (isMetadataVerified && b.usdValueNum === 0 && !isNative) {
-                  classification = <span className="text-amber-400 bg-amber-400/10 px-2 py-1 rounded text-xs text-nowrap">Syncing / Neutral</span>;
               }
 
               return (
@@ -151,7 +149,7 @@ const PortfolioMatrix = ({ balances }: { balances: any[] }) => {
                     {symbol}
                   </td>
                   <td className="py-4 px-4">{classification}</td>
-                  <td className="py-4 px-4 text-zinc-500 text-[11px] tracking-wider font-mono">{b.contract_address}</td>
+                  <td className="py-4 px-4 text-zinc-500 text-[11px] tracking-wider font-mono">{address}</td>
                   <td className="py-4 px-4 text-right text-emerald-400">{value}</td>
                   <td className="py-4 px-4 text-right">
                     <a href={`https://solscan.io/token/${b.contract_address}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-[#D4AF37] hover:text-white transition-colors bg-[#D4AF37]/10 px-3 py-2 rounded-md border border-[#D4AF37]/30 text-nowrap">

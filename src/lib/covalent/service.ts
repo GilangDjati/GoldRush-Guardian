@@ -61,17 +61,42 @@ export function calculateTrustScore(balances: any[], transactions: any[]): {
       const isImposter = !isOfficialMint && OFFICIAL_MINTS[symbol] && !OFFICIAL_MINTS[symbol].includes(address);
       const isMetadataVerified = isNative || isOfficialMint || (!!b.logo_url && !b.is_spam) || (usdValueNum > 0 && !b.is_spam);
 
+      // Algorithmic Priority Rank
+      let guardianRiskClass = 'danger';
+      let guardianSortRank = 4;
+      
+      if (isImposter) {
+          guardianRiskClass = 'imposter';
+          guardianSortRank = 5;
+      } else if (isOfficialMint || isNative) {
+          guardianRiskClass = 'safe';
+          guardianSortRank = 1;
+      } else if (isMetadataVerified) {
+          guardianRiskClass = 'neutral';
+          guardianSortRank = 2;
+      } else {
+          guardianRiskClass = 'danger';
+          guardianSortRank = 3;
+      }
+
       return {
           ...b,
           isNative,
           guardianSymbol: symbol,
           usdValueNum,
           formattedValue: usdValue,
-          isImposter,
-          isOfficialMint,
-          isMetadataVerified
+          guardianRiskClass,
+          guardianSortRank
       };
   });
+
+  // Sort Array strictly by safety class
+  processedBalances.sort((a, b) => a.guardianSortRank - b.guardianSortRank);
+
+  // Log Containers (To ensure ✅ -> ℹ️ -> ⚠️ -> 🚨)
+  const logSafe: string[] = [];
+  const logNeutral: string[] = [];
+  const logDanger: string[] = [];
 
   // 1. Balance Evaluation Layer & Heatmap Genesis
   const solToken = processedBalances.find(b => b.isNative);
@@ -80,56 +105,38 @@ export function calculateTrustScore(balances: any[], transactions: any[]): {
     const balanceAmount = Number(solToken.balance) / Math.pow(10, decimals);
     if (balanceAmount > 5) score += 15;
     else if (balanceAmount > 0.5) score += 5;
-    decoderLogs.push(`✅ SYSTEM CONFIRMED: Core identity holds Native Liquidity (${balanceAmount.toFixed(2)} SOL). Secure foundation established. (Mint: ${solToken.contract_address})`);
+    logSafe.push(`✅ SYSTEM CONFIRMED: Core identity holds Native Liquidity (${balanceAmount.toFixed(2)} SOL). Secure foundation established. (Mint: ${solToken.contract_address})`);
   } else {
-    decoderLogs.push(`⚠️ WARNING: Mainframe detects zero Native Liquidity (SOL). Wallet operates on external gas fees or is newly spawned.`);
+    logDanger.push(`⚠️ WARNING: Mainframe detects zero Native Liquidity (SOL). Wallet operates on external gas fees or is newly spawned.`);
   }
 
   // Iterate over processed assets for Map and Decoder logs
   let dustCount = 0;
   let imposterCount = 0;
+  let neutralCount = 0;
 
   processedBalances.forEach(b => {
-      const { guardianSymbol: symbol, contract_address: address, usdValueNum, formattedValue: usdValue, isImposter, isMetadataVerified, isNative, isOfficialMint } = b;
+      const { guardianSymbol: symbol, contract_address: address, formattedValue: usdValue, guardianRiskClass, isNative } = b;
       
-      // 1. Intelligent Imposter Detection
-      if (isImposter) {
-         imposterCount++;
-         dustCount++; // Automatically flag as severe dusting
-         score -= 10;
+      if (guardianRiskClass === 'imposter') {
+         imposterCount++; dustCount++; score -= 10;
          heatmapMetrics.push({ symbol: `FAKE-${symbol}`, value: 'SCAM', riskStatus: 'danger' });
-         if (imposterCount <= 3) {
-            decoderLogs.push(`🚨 DANGER ALERT: Imposter Contract Detected! Asset '${symbol}' mirrors a legitimate token but uses an unauthorized mint address. Do not sign transactions with this payload! (Mint: ${address})`);
-         }
-         return; // Skip standard classification
-      }
-      
-      // 2. Diplomatic Immunity Override - Official assets are ALWAYS Green/Verified
-      if (isOfficialMint && !isNative) {
+         if (imposterCount <= 3) logDanger.push(`🚨 DANGER ALERT: Imposter Contract Detected! Asset '${symbol}' mirrors a legitimate token but uses an unauthorized mint address. Do not sign transactions with this payload! (Mint: ${address})`);
+      } else if (guardianRiskClass === 'safe') {
          heatmapMetrics.push({ symbol, value: usdValue, riskStatus: 'safe' });
-         decoderLogs.push(`✅ SYSTEM CONFIRMED: Official Whitelisted Asset detected -> ${symbol}. Authenticated against global registry. (Mint: ${address})`);
-         return;
-      }
-      
-      // 3. Smart Metadata Validation & Context-Aware Price Handling
-      if (!isMetadataVerified) {
+         if (!isNative) logSafe.push(`✅ SYSTEM CONFIRMED: Official Whitelisted Asset detected -> ${symbol}. Authenticated against global registry. (Mint: ${address})`);
+      } else if (guardianRiskClass === 'neutral') {
+         neutralCount++;
+         heatmapMetrics.push({ symbol, value: usdValue, riskStatus: 'neutral' });
+         if (neutralCount <= 3) logNeutral.push(`ℹ️ STATUS UPDATE: Identity Verified — Asset '${symbol}' confirmed legitimate. Sub-Official Indexing in progress. (Mint: ${address})`);
+      } else if (guardianRiskClass === 'danger') {
          dustCount++;
          heatmapMetrics.push({ symbol, value: usdValue, riskStatus: 'danger' });
-         if (dustCount < 3) {
-            decoderLogs.push(`⚠️ NETWORK WARNING: Unknown smart contract '${symbol}' lacks verified indexes. Direct interaction carries extraction risk. (Mint: ${address})`);
-         }
-      } else if (isMetadataVerified && usdValueNum === 0 && !isNative) {
-         heatmapMetrics.push({ symbol, value: 'SYNCING', riskStatus: 'neutral' });
-         if (dustCount === 0 || Math.random() > 0.8) {
-            decoderLogs.push(`ℹ️ STATUS UPDATE: Identity Verified — Asset '${symbol}' confirmed legitimate. Price Data Syncing pending oracle liquidity. (Mint: ${address})`);
-         }
-      } else if (!isNative) {
-         heatmapMetrics.push({ symbol, value: usdValue, riskStatus: 'safe' });
-         if (usdValueNum > 100) {
-            decoderLogs.push(`✅ SYSTEM CONFIRMED: Verified Asset detected -> ${symbol} (${usdValue}). Authenticated against global registry. (Mint: ${address})`);
-         }
+         if (dustCount <= 5) logDanger.push(`⚠️ NETWORK WARNING: Unknown smart contract '${symbol}' lacks verified indexes. Direct interaction carries extraction risk. (Mint: ${address})`);
       }
   });
+
+  decoderLogs = [...logSafe, ...logNeutral, ...logDanger];
 
   // Dusting Check / Shadow Monitor Trigger
   if (dustCount > 20) {
