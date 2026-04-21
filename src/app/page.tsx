@@ -128,17 +128,19 @@ const PortfolioMatrix = ({ balances }: { balances: any[] }) => {
           </thead>
           <tbody>
             {balances.map((b, i) => {
-              const symbol = b.contract_ticker_symbol || `Unknown-${b.contract_address.substring(0,4)}`;
-              const isNative = b.native_token === true;
-              const usdValueNum = Number(b.quote) || 0;
-              const value = b.quote ? `$${usdValueNum.toFixed(2)}` : '$0.00';
-              
-              // Simplistic re-check for standard display
-              const isMetadataVerified = isNative || (!!b.logo_url) || (usdValueNum > 0 && !b.is_spam);
+              const symbol = b.guardianSymbol || `Unknown-${b.contract_address.substring(0,4)}`;
+              // Utilize the strict Boolean classifications calculated by the Guardian Engine in service.ts
+              const { isNative, isMetadataVerified, isImposter, formattedValue: value } = b;
               
               let classification = <span className="text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded text-xs">Verified</span>;
-              if (!isMetadataVerified) classification = <span className="text-crimson-accent bg-crimson-accent/10 px-2 py-1 rounded text-xs font-bold text-nowrap">High Risk</span>;
-              else if (isMetadataVerified && usdValueNum === 0 && !isNative) classification = <span className="text-amber-400 bg-amber-400/10 px-2 py-1 rounded text-xs text-nowrap">Syncing / Neutral</span>;
+              
+              if (isImposter) {
+                  classification = <span className="text-crimson-accent bg-crimson-accent/10 px-2 py-1 rounded text-xs font-bold text-nowrap">Imposter / Scam</span>;
+              } else if (!isMetadataVerified) {
+                  classification = <span className="text-crimson-accent bg-crimson-accent/10 px-2 py-1 rounded text-xs font-bold text-nowrap">High Risk</span>;
+              } else if (isMetadataVerified && b.usdValueNum === 0 && !isNative) {
+                  classification = <span className="text-amber-400 bg-amber-400/10 px-2 py-1 rounded text-xs text-nowrap">Syncing / Neutral</span>;
+              }
 
               return (
                 <tr key={i} className="border-b border-zinc-800/20 hover:bg-zinc-800/40 transition-colors text-sm font-mono text-zinc-300">

@@ -21,12 +21,12 @@ const DEX_PROGRAMS = {
   PHOENIX: 'PhoeNiXZ8ByJGLkxNfZRnkUfjvmuYqLR8943EWev1E5'
 };
 
-const OFFICIAL_MINTS: Record<string, string> = {
-  'USDC': 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-  'USDT': 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
-  'JUP': 'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbAbdFSQkm1n',
-  'RNDR': 'rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof',
-  'SOL': 'So11111111111111111111111111111111111111112', // WSOL
+const OFFICIAL_MINTS: Record<string, string[]> = {
+  'USDC': ['EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'],
+  'USDT': ['Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB'],
+  'JUP': ['JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbAbdFSQkm1n'],
+  'RNDR': ['rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof'],
+  'SOL': ['So11111111111111111111111111111111111111112', '11111111111111111111111111111111'], // WSOL & Native SOL
 };
 
 export function calculateTrustScore(balances: any[], transactions: any[]): { 
@@ -47,37 +47,50 @@ export function calculateTrustScore(balances: any[], transactions: any[]): {
   let heatmapMetrics: any[] = [];
   let shadowAlert: string | null = null;
 
-  // 1. Balance Evaluation Layer & Heatmap Genesis
-  const solToken = balances.find((b) => b.contract_ticker_symbol === 'SOL' || b.native_token === true);
-  if (solToken) {
-    const decimals = solToken.contract_decimals || 9;
-    const balanceAmount = Number(solToken.balance) / Math.pow(10, decimals);
-    if (balanceAmount > 5) score += 15;
-    else if (balanceAmount > 0.5) score += 5;
-    
-    heatmapMetrics.push({ symbol: 'SOL', value: balanceAmount.toFixed(2), riskStatus: 'safe' });
-    decoderLogs.push(`✅ SYSTEM CONFIRMED: Core identity holds Native Liquidity (${balanceAmount.toFixed(2)} SOL). Secure foundation established.`);
-  } else {
-    decoderLogs.push(`⚠️ WARNING: Mainframe detects zero Native Liquidity (SOL). Wallet operates on external gas fees or is newly spawned.`);
-  }
-
-  // Iterate over other assets for Map and Decoder logs
-  let dustCount = 0;
-  let imposterCount = 0;
-
-  balances.forEach(b => {
-      // Exclude Native representation since it's hardcoded above
-      if (b.native_token === true) return;
-      
+  // Map over balances to inject unified state for the frontend matrix
+  const processedBalances = balances.map(b => {
+      const isNative = b.native_token === true || b.contract_address === '11111111111111111111111111111111';
       const rawSymbol = b.contract_ticker_symbol || '';
       const symbol = (rawSymbol || `Unknown-${b.contract_address.substring(0,4)}`).toUpperCase();
       const address = b.contract_address;
       const usdValueNum = Number(b.quote) || 0;
       const usdValue = b.quote ? `$${usdValueNum.toFixed(2)}` : '$0.00';
       
+      const isImposter = OFFICIAL_MINTS[symbol] && !OFFICIAL_MINTS[symbol].includes(address);
+      const isMetadataVerified = isNative || (!!b.logo_url && !b.is_spam) || (usdValueNum > 0 && !b.is_spam);
+
+      return {
+          ...b,
+          isNative,
+          guardianSymbol: symbol,
+          usdValueNum,
+          formattedValue: usdValue,
+          isImposter,
+          isMetadataVerified
+      };
+  });
+
+  // 1. Balance Evaluation Layer & Heatmap Genesis
+  const solToken = processedBalances.find(b => b.isNative);
+  if (solToken) {
+    const decimals = solToken.contract_decimals || 9;
+    const balanceAmount = Number(solToken.balance) / Math.pow(10, decimals);
+    if (balanceAmount > 5) score += 15;
+    else if (balanceAmount > 0.5) score += 5;
+    decoderLogs.push(`✅ SYSTEM CONFIRMED: Core identity holds Native Liquidity (${balanceAmount.toFixed(2)} SOL). Secure foundation established. (Mint: ${solToken.contract_address})`);
+  } else {
+    decoderLogs.push(`⚠️ WARNING: Mainframe detects zero Native Liquidity (SOL). Wallet operates on external gas fees or is newly spawned.`);
+  }
+
+  // Iterate over processed assets for Map and Decoder logs
+  let dustCount = 0;
+  let imposterCount = 0;
+
+  processedBalances.forEach(b => {
+      const { guardianSymbol: symbol, contract_address: address, usdValueNum, formattedValue: usdValue, isImposter, isMetadataVerified, isNative } = b;
+      
       // 1. Intelligent Imposter Detection
-      // Treat matching tickers pointing to unofficial mints as Phishing Contracts
-      if (OFFICIAL_MINTS[symbol] && OFFICIAL_MINTS[symbol] !== address) {
+      if (isImposter) {
          imposterCount++;
          dustCount++; // Automatically flag as severe dusting
          score -= 10;
@@ -89,23 +102,20 @@ export function calculateTrustScore(balances: any[], transactions: any[]): {
       }
       
       // 2. Smart Metadata Validation & Context-Aware Price Handling
-      // An asset is 'verified' if GoldRush specifically returned a logo image OR it holds valid non-zero liquidity
-      const isMetadataVerified = (!!b.logo_url) || (usdValueNum > 0 && !b.is_spam);
-      
       if (!isMetadataVerified) {
          dustCount++;
          heatmapMetrics.push({ symbol, value: usdValue, riskStatus: 'danger' });
          if (dustCount < 3) {
             decoderLogs.push(`⚠️ NETWORK WARNING: Unknown smart contract '${symbol}' lacks verified indexes. Direct interaction carries extraction risk. (Mint: ${address})`);
          }
-      } else if (isMetadataVerified && usdValueNum === 0) {
+      } else if (isMetadataVerified && usdValueNum === 0 && !isNative) {
          heatmapMetrics.push({ symbol, value: 'SYNCING', riskStatus: 'neutral' });
          if (dustCount === 0 || Math.random() > 0.8) {
             decoderLogs.push(`ℹ️ STATUS UPDATE: Identity Verified — Asset '${symbol}' confirmed legitimate. Price Data Syncing pending oracle liquidity. (Mint: ${address})`);
          }
       } else {
          heatmapMetrics.push({ symbol, value: usdValue, riskStatus: 'safe' });
-         if (usdValueNum > 100) {
+         if (usdValueNum > 100 && !isNative) {
             decoderLogs.push(`✅ SYSTEM CONFIRMED: Verified Asset detected -> ${symbol} (${usdValue}). Authenticated against global registry. (Mint: ${address})`);
          }
       }
@@ -158,7 +168,8 @@ export function calculateTrustScore(balances: any[], transactions: any[]): {
     insights,
     decoderLogs,
     shadowAlert,
-    heatmapMetrics
+    heatmapMetrics,
+    processedBalances
   };
 }
 
@@ -212,7 +223,7 @@ export async function getSolanaTrustData(address: string): Promise<TrustScoreDat
   return {
     success: true,
     address,
-    balances,
+    balances: metric.processedBalances,
     trustScore: metric.score,
     verifiedProtocols: metric.verifiedProtocols,
     insights: metric.insights,
