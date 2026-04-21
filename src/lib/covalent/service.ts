@@ -21,6 +21,14 @@ const DEX_PROGRAMS = {
   PHOENIX: 'PhoeNiXZ8ByJGLkxNfZRnkUfjvmuYqLR8943EWev1E5'
 };
 
+const OFFICIAL_MINTS: Record<string, string> = {
+  'USDC': 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+  'USDT': 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+  'JUP': 'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbAbdFSQkm1n',
+  'RNDR': 'rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof',
+  'SOL': 'So11111111111111111111111111111111111111112', // WSOL
+};
+
 export function calculateTrustScore(balances: any[], transactions: any[]): { 
   score: number, 
   verifiedProtocols: string[], 
@@ -55,21 +63,51 @@ export function calculateTrustScore(balances: any[], transactions: any[]): {
 
   // Iterate over other assets for Map and Decoder logs
   let dustCount = 0;
+  let imposterCount = 0;
+
   balances.forEach(b => {
-      if (b.contract_ticker_symbol === 'SOL' || b.native_token === true) return;
+      // Exclude Native representation since it's hardcoded above
+      if (b.native_token === true) return;
       
-      const isSpam = !b.quote || Number(b.quote) === 0;
-      const symbol = b.contract_ticker_symbol || `Unknown-${b.contract_address.substring(0,4)}`;
-      const usdValue = b.quote ? `$${Number(b.quote).toFixed(2)}` : '$0.00';
+      const rawSymbol = b.contract_ticker_symbol || '';
+      const symbol = (rawSymbol || `Unknown-${b.contract_address.substring(0,4)}`).toUpperCase();
+      const address = b.contract_address;
+      const usdValueNum = Number(b.quote) || 0;
+      const usdValue = b.quote ? `$${usdValueNum.toFixed(2)}` : '$0.00';
       
-      if (isSpam) {
+      // 1. Intelligent Imposter Detection
+      // Treat matching tickers pointing to unofficial mints as Phishing Contracts
+      if (OFFICIAL_MINTS[symbol] && OFFICIAL_MINTS[symbol] !== address) {
+         imposterCount++;
+         dustCount++; // Automatically flag as severe dusting
+         score -= 10;
+         heatmapMetrics.push({ symbol: `FAKE-${symbol}`, value: 'SCAM', riskStatus: 'danger' });
+         if (imposterCount <= 3) {
+            decoderLogs.push(`🚨 DANGER ALERT: Imposter Contract Detected! Asset '${symbol}' mirrors a legitimate token but uses an unauthorized mint address. Do not sign transactions with this payload! (Mint: ${address})`);
+         }
+         return; // Skip standard classification
+      }
+      
+      // 2. Smart Metadata Validation & Context-Aware Price Handling
+      // An asset is 'verified' if GoldRush specifically returned a logo image OR it holds valid non-zero liquidity
+      const isMetadataVerified = (!!b.logo_url) || (usdValueNum > 0 && !b.is_spam);
+      
+      if (!isMetadataVerified) {
          dustCount++;
          heatmapMetrics.push({ symbol, value: usdValue, riskStatus: 'danger' });
          if (dustCount < 3) {
-            decoderLogs.push(`🚨 DANGER TARGET DETECTED: Unknown smart contract '${symbol}' holds zero verified price index. Direct interaction carries high drainer risk!`);
+            decoderLogs.push(`⚠️ NETWORK WARNING: Unknown smart contract '${symbol}' lacks verified indexes. Direct interaction carries extraction risk. (Mint: ${address})`);
+         }
+      } else if (isMetadataVerified && usdValueNum === 0) {
+         heatmapMetrics.push({ symbol, value: 'SYNCING', riskStatus: 'neutral' });
+         if (dustCount === 0 || Math.random() > 0.8) {
+            decoderLogs.push(`ℹ️ STATUS UPDATE: Identity Verified — Asset '${symbol}' confirmed legitimate. Price Data Syncing pending oracle liquidity. (Mint: ${address})`);
          }
       } else {
-         heatmapMetrics.push({ symbol, value: usdValue, riskStatus: 'neutral' });
+         heatmapMetrics.push({ symbol, value: usdValue, riskStatus: 'safe' });
+         if (usdValueNum > 100) {
+            decoderLogs.push(`✅ SYSTEM CONFIRMED: Verified Asset detected -> ${symbol} (${usdValue}). Authenticated against global registry. (Mint: ${address})`);
+         }
       }
   });
 

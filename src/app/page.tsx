@@ -109,6 +109,61 @@ const SecurityHeatmap = ({ metrics }: { metrics: TrustScoreData['heatmapMetrics'
   );
 };
 
+// 5. Decoded Portfolio Matrix (Evidence-Based Traceability)
+const PortfolioMatrix = ({ balances }: { balances: any[] }) => {
+  if (!balances || balances.length === 0) return null;
+  return (
+    <div className="w-full bg-[#121212] rounded-2xl border border-zinc-800 p-6 mt-8 shadow-2xl">
+      <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-6 pb-4 border-b border-zinc-800">Decoded Portfolio Matrix (Forensic Evidence)</h3>
+      <div className="w-full overflow-x-auto custom-scrollbar">
+        <table className="w-full text-left border-collapse min-w-[800px]">
+          <thead>
+            <tr className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest border-b border-zinc-800/50">
+              <th className="py-3 px-4 font-normal">Asset</th>
+              <th className="py-3 px-4 font-normal">Classification</th>
+              <th className="py-3 px-4 font-normal">Mint Address (Traceable)</th>
+              <th className="py-3 px-4 font-normal text-right">Value</th>
+              <th className="py-3 px-4 font-normal text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {balances.map((b, i) => {
+              const symbol = b.contract_ticker_symbol || `Unknown-${b.contract_address.substring(0,4)}`;
+              const isNative = b.native_token === true;
+              const usdValueNum = Number(b.quote) || 0;
+              const value = b.quote ? `$${usdValueNum.toFixed(2)}` : '$0.00';
+              
+              // Simplistic re-check for standard display
+              const isMetadataVerified = isNative || (!!b.logo_url) || (usdValueNum > 0 && !b.is_spam);
+              
+              let classification = <span className="text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded text-xs">Verified</span>;
+              if (!isMetadataVerified) classification = <span className="text-crimson-accent bg-crimson-accent/10 px-2 py-1 rounded text-xs font-bold text-nowrap">High Risk</span>;
+              else if (isMetadataVerified && usdValueNum === 0 && !isNative) classification = <span className="text-amber-400 bg-amber-400/10 px-2 py-1 rounded text-xs text-nowrap">Syncing / Neutral</span>;
+
+              return (
+                <tr key={i} className="border-b border-zinc-800/20 hover:bg-zinc-800/40 transition-colors text-sm font-mono text-zinc-300">
+                  <td className="py-4 px-4 font-bold flex items-center gap-3">
+                    {b.logo_url ? <img src={b.logo_url} className="w-6 h-6 rounded-full" alt="logo" /> : <div className="w-6 h-6 rounded-full bg-zinc-800"></div>}
+                    {symbol}
+                  </td>
+                  <td className="py-4 px-4">{classification}</td>
+                  <td className="py-4 px-4 text-zinc-500 text-[11px] tracking-wider font-mono">{b.contract_address}</td>
+                  <td className="py-4 px-4 text-right text-emerald-400">{value}</td>
+                  <td className="py-4 px-4 text-right">
+                    <a href={`https://solscan.io/token/${b.contract_address}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-[#D4AF37] hover:text-white transition-colors bg-[#D4AF37]/10 px-3 py-2 rounded-md border border-[#D4AF37]/30 text-nowrap">
+                      View on Solscan <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                    </a>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
 // Main Command Center UI
 export default function GuardianDashboard() {
   const [address, setAddress] = useState('');
@@ -288,6 +343,9 @@ export default function GuardianDashboard() {
 
                   </div>
                 </div>
+
+                {/* 2. Decoded Portfolio Matrix Injection */}
+                <PortfolioMatrix balances={data.balances} />
 
               </div>
             )}
