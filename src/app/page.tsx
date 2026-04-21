@@ -130,12 +130,14 @@ const PortfolioMatrix = ({ balances }: { balances: any[] }) => {
             {balances.map((b, i) => {
               const symbol = b.guardianSymbol || `Unknown-${b.contract_address.substring(0,4)}`;
               // Utilize the strict Boolean classifications calculated by the Guardian Engine in service.ts
-              const { isNative, isMetadataVerified, isImposter, formattedValue: value } = b;
+              const { isNative, isMetadataVerified, isImposter, isOfficialMint, formattedValue: value } = b;
               
               let classification = <span className="text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded text-xs">Verified</span>;
               
               if (isImposter) {
                   classification = <span className="text-crimson-accent bg-crimson-accent/10 px-2 py-1 rounded text-xs font-bold text-nowrap">Imposter / Scam</span>;
+              } else if (isOfficialMint) {
+                  classification = <span className="text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded text-xs">Official Verified</span>;
               } else if (!isMetadataVerified) {
                   classification = <span className="text-crimson-accent bg-crimson-accent/10 px-2 py-1 rounded text-xs font-bold text-nowrap">High Risk</span>;
               } else if (isMetadataVerified && b.usdValueNum === 0 && !isNative) {

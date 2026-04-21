@@ -56,8 +56,9 @@ export function calculateTrustScore(balances: any[], transactions: any[]): {
       const usdValueNum = Number(b.quote) || 0;
       const usdValue = b.quote ? `$${usdValueNum.toFixed(2)}` : '$0.00';
       
-      const isImposter = OFFICIAL_MINTS[symbol] && !OFFICIAL_MINTS[symbol].includes(address);
-      const isMetadataVerified = isNative || (!!b.logo_url && !b.is_spam) || (usdValueNum > 0 && !b.is_spam);
+      const isOfficialMint = Object.values(OFFICIAL_MINTS).some(mints => mints.includes(address));
+      const isImposter = !isOfficialMint && OFFICIAL_MINTS[symbol] && !OFFICIAL_MINTS[symbol].includes(address);
+      const isMetadataVerified = isNative || isOfficialMint || (!!b.logo_url && !b.is_spam) || (usdValueNum > 0 && !b.is_spam);
 
       return {
           ...b,
@@ -66,6 +67,7 @@ export function calculateTrustScore(balances: any[], transactions: any[]): {
           usdValueNum,
           formattedValue: usdValue,
           isImposter,
+          isOfficialMint,
           isMetadataVerified
       };
   });
@@ -87,7 +89,7 @@ export function calculateTrustScore(balances: any[], transactions: any[]): {
   let imposterCount = 0;
 
   processedBalances.forEach(b => {
-      const { guardianSymbol: symbol, contract_address: address, usdValueNum, formattedValue: usdValue, isImposter, isMetadataVerified, isNative } = b;
+      const { guardianSymbol: symbol, contract_address: address, usdValueNum, formattedValue: usdValue, isImposter, isMetadataVerified, isNative, isOfficialMint } = b;
       
       // 1. Intelligent Imposter Detection
       if (isImposter) {
@@ -101,7 +103,14 @@ export function calculateTrustScore(balances: any[], transactions: any[]): {
          return; // Skip standard classification
       }
       
-      // 2. Smart Metadata Validation & Context-Aware Price Handling
+      // 2. Diplomatic Immunity Override - Official assets are ALWAYS Green/Verified
+      if (isOfficialMint && !isNative) {
+         heatmapMetrics.push({ symbol, value: usdValue, riskStatus: 'safe' });
+         decoderLogs.push(`✅ SYSTEM CONFIRMED: Official Whitelisted Asset detected -> ${symbol}. Authenticated against global registry. (Mint: ${address})`);
+         return;
+      }
+      
+      // 3. Smart Metadata Validation & Context-Aware Price Handling
       if (!isMetadataVerified) {
          dustCount++;
          heatmapMetrics.push({ symbol, value: usdValue, riskStatus: 'danger' });
@@ -113,9 +122,9 @@ export function calculateTrustScore(balances: any[], transactions: any[]): {
          if (dustCount === 0 || Math.random() > 0.8) {
             decoderLogs.push(`ℹ️ STATUS UPDATE: Identity Verified — Asset '${symbol}' confirmed legitimate. Price Data Syncing pending oracle liquidity. (Mint: ${address})`);
          }
-      } else {
+      } else if (!isNative) {
          heatmapMetrics.push({ symbol, value: usdValue, riskStatus: 'safe' });
-         if (usdValueNum > 100 && !isNative) {
+         if (usdValueNum > 100) {
             decoderLogs.push(`✅ SYSTEM CONFIRMED: Verified Asset detected -> ${symbol} (${usdValue}). Authenticated against global registry. (Mint: ${address})`);
          }
       }
