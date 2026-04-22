@@ -205,10 +205,11 @@ export async function getSolanaTrustData(address: string): Promise<TrustScoreDat
   
   if (!resBalances.ok) {
      const status = resBalances.status;
-     if (status === 401) throw new Error("Invalid Auth / Connection Error. Please verify your cqt_ API key configuration.");
-     if (status === 404) throw new Error("Classified ledger isolation: Target Identity holds no structural history on Solana.");
-     if (status === 429) throw new Error("Covalent Rate limit exceeded. Standby.");
-     throw new Error(`Data sync failed (Status: ${status})`);
+     if (status === 400) throw new Error("🚨 NEURAL LINK REJECTED: Malformed Target Identity Hash. Solana addresses must be valid base58 cryptographic strings.");
+     if (status === 401) throw new Error("🚨 CORE AUTHENTICATION FAILURE: Sentinel API Key connection severed. Standby.");
+     if (status === 404) throw new Error("⚠️ GHOST NODE DETECTED: Target Identity holds no structural history on the Solana network.");
+     if (status === 429) throw new Error("⏳ OVERLOAD PROTOCOL: Covalent Indexer rate limits exceeded. Awaiting thermal cooldown.");
+     throw new Error(`🚨 CRITICAL FAULT: Telemetry sync failed with Unknown Protocol Status [${status}].`);
   }
 
   // Gracefully handle 501/Unsupported transaction fetching without crashing

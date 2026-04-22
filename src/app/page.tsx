@@ -269,9 +269,24 @@ export default function GuardianDashboard() {
           <div className="w-full relative min-h-[400px] flex flex-col items-center justify-start z-10 w-full max-w-6xl">
             
             {error && !isScanning && (
-              <div className="w-full max-w-xl p-10 rounded-2xl border border-crimson-accent/30 bg-[#1a1a1a] shadow-xl text-center">
-                <h3 className="text-xl font-bold text-white mb-2">Protocol Error</h3>
-                <p className="text-zinc-400">{error}</p>
+              <div className="w-full max-w-2xl p-10 rounded-2xl border-2 border-crimson-accent bg-[#1a0505] shadow-[0_0_50px_rgba(220,38,38,0.3)] text-center animate-pulse relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-1 bg-crimson-accent opacity-50" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-crimson-accent/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2" />
+                
+                <div className="w-16 h-16 rounded-full border border-crimson-accent/50 flex items-center justify-center mx-auto mb-6 bg-black relative">
+                   <div className="absolute inset-0 rounded-full bg-crimson-accent/20 animate-ping opacity-75"></div>
+                   <svg className="w-8 h-8 text-crimson-accent relative z-10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                   </svg>
+                </div>
+                
+                <h3 className="text-xl md:text-2xl font-black text-crimson-accent tracking-[0.2em] uppercase mb-4 opacity-90">Protocol Intercepted</h3>
+                <p className="text-white/90 font-mono text-sm md:text-base leading-relaxed tracking-wide px-4">
+                  {error}
+                </p>
+                <div className="mt-8 text-[10px] font-mono text-crimson-accent/50 tracking-widest uppercase border-t border-crimson-accent/10 pt-4">
+                  SYS.ERR.LOG / CONNECTION SEVERED
+                </div>
               </div>
             )}
 
