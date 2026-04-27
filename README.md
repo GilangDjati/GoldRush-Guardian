@@ -3,7 +3,7 @@
 > **Defensive AI Trace & Anomaly Decryption Engine**
 > Built for the **GoldRush Frontier Hackathon**
 
-[![Live Demo](https://img.shields.io/badge/Live_Demo-Vercel_Deploy-emerald?style=for-the-badge&logo=vercel)](https://gold-rush-guardian-1bc4-au24hflgw.vercel.app/) 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Vercel_Deploy-emerald?style=for-the-badge&logo=vercel)](https://gold-rush-guardian.vercel.app/) 
 [![Video Pitch](https://img.shields.io/badge/Video_Pitch-X_(Twitter)-black?style=for-the-badge&logo=x)](https://x.com/_JD_ID_/status/2048822490651381863?s=20)
 
 ---
