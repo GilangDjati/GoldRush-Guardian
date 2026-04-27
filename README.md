@@ -3,8 +3,8 @@
 > **Defensive AI Trace & Anomaly Decryption Engine**
 > Built for the **GoldRush Frontier Hackathon**
 
-[![Live Demo](https://img.shields.io/badge/Live_Demo-Vercel_Deploy-emerald?style=for-the-badge&logo=vercel)](#) 
-[![Video Pitch](https://img.shields.io/badge/Video_Pitch-X_(Twitter)-black?style=for-the-badge&logo=x)](#)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Vercel_Deploy-emerald?style=for-the-badge&logo=vercel)](https://gold-rush-guardian-1bc4-au24hflgw.vercel.app/) 
+[![Video Pitch](https://img.shields.io/badge/Video_Pitch-X_(Twitter)-black?style=for-the-badge&logo=x)](https://x.com/_JD_ID_/status/2048822490651381863?s=20)
 
 ---
 
@@ -51,6 +51,11 @@ The entire Command Center—from the prioritized sorting of the **Decoder Logs**
 
 ---
 
+## 🛰️ Future Roadmap
+- **V2 Neural Link:** Integration with WebSocket for real-time, live-streaming threat detection.
+- **Smart Contract Profiler:** Deeper analysis of program-account logic to identify honeypots automatically.
+- **Mobile Tactical Interface:** A PWA version for security monitoring on-the-go.
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -60,7 +65,7 @@ The entire Command Center—from the prioritized sorting of the **Decoder Logs**
 ### Local Deployment
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-repo/GoldRush-Guardian.git
+git clone https://github.com/GilangDjati/GoldRush-Guardian.git
 cd GoldRush-Guardian
 
 # 2. Install dependencies
