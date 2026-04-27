@@ -4,7 +4,7 @@
 > Built for the **GoldRush Frontier Hackathon**
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-Vercel_Deploy-emerald?style=for-the-badge&logo=vercel)](https://gold-rush-guardian.vercel.app/) 
-[![Video Pitch](https://img.shields.io/badge/Video_Pitch-X_(Twitter)-black?style=for-the-badge&logo=x)](https://x.com/_JD_ID_/status/2048822490651381863?s=20)
+[![Video Pitch](https://img.shields.io/badge/Video_Pitch-X_(Twitter)-black?style=for-the-badge&logo=x)](https://x.com/_JD_ID_/status/2048827805216166187?s=20)
 
 ---
 
